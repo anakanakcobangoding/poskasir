@@ -104,15 +104,49 @@
                     </div>
                 </dl>
 
-                <div class="space-y-2 border-t border-slate-100 px-5 py-4">
-                    <button type="button" id="pos-checkout" class="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50" disabled>
-                        Lanjut ke Pembayaran
+                <form id="pos-order-form" action="{{ route('orders.store') }}" method="POST" class="space-y-3 border-t border-slate-100 px-5 py-4">
+                    @csrf
+
+                    <fieldset>
+                        <legend class="label">Tipe pesanan</legend>
+                        <div class="mt-1 grid grid-cols-3 gap-2">
+                            @foreach (['TA' => 'Bungkus', 'DI' => 'Dine-in', 'DLV' => 'Delivery'] as $value => $label)
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="type" value="{{ $value }}" class="peer sr-only" @checked($value === 'TA')>
+                                    <span class="block rounded-lg border border-slate-200 px-2 py-2 text-center text-xs font-medium text-slate-600 transition peer-checked:border-emerald-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500/40">{{ $label }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </fieldset>
+
+                    <div>
+                        <label class="label" for="pos-customer-name">Nama pelanggan <span class="font-normal text-slate-400">(opsional)</span></label>
+                        <input id="pos-customer-name" name="customer_name" type="text" class="input" maxlength="255" autocomplete="off">
+                    </div>
+
+                    <div id="pos-table-field" class="hidden">
+                        <label class="label" for="pos-table-number">Nomor meja</label>
+                        <input id="pos-table-number" name="table_number" class="input" maxlength="50" placeholder="Contoh: A1">
+                    </div>
+
+                    <div id="pos-address-field" class="hidden">
+                        <label class="label" for="pos-delivery-address">Alamat pengiriman</label>
+                        <textarea id="pos-delivery-address" name="delivery_address" class="input" rows="2" maxlength="500" placeholder="Nama jalan, nomor rumah, patokan..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="label" for="pos-order-notes">Catatan <span class="text-slate-400">(opsional)</span></label>
+                        <textarea id="pos-order-notes" name="notes" class="input" rows="2" maxlength="500" placeholder="Contoh: tanpa sayur, pedas sedang"></textarea>
+                    </div>
+
+                    <p id="pos-order-error" class="hidden rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700" role="alert"></p>
+                    <p id="pos-order-success" class="hidden rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700" role="status"></p>
+
+                    <button type="submit" id="pos-checkout" class="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50" disabled>
+                        Simpan Pesanan
                     </button>
-                    <p id="pos-checkout-note" class="hidden text-center text-xs font-medium text-emerald-700">
-                        Pembayaran akan tersedia pada tahap berikutnya.
-                    </p>
                     <p class="text-center text-xs text-slate-400">Keranjang hanya tersimpan sementara di perangkat ini.</p>
-                </div>
+                </form>
             </div>
         </aside>
     </div>

@@ -52,7 +52,16 @@ function initPos() {
         search: document.getElementById('pos-search'),
         noResults: document.getElementById('pos-no-results'),
         checkout: document.getElementById('pos-checkout'),
-        checkoutNote: document.getElementById('pos-checkout-note'),
+        orderForm: document.getElementById('pos-order-form'),
+        orderError: document.getElementById('pos-order-error'),
+        orderSuccess: document.getElementById('pos-order-success'),
+        customerName: document.getElementById('pos-customer-name'),
+        tableField: document.getElementById('pos-table-field'),
+        tableNumber: document.getElementById('pos-table-number'),
+        addressField: document.getElementById('pos-address-field'),
+        deliveryAddress: document.getElementById('pos-delivery-address'),
+        orderNotes: document.getElementById('pos-order-notes'),
+        typeRadios: [...document.querySelectorAll('#pos-order-form input[name="type"]')],
         filterButtons: [...document.querySelectorAll('.js-category-filter')],
         sections: [...document.querySelectorAll('.js-category-section')],
         productButtons: [...document.querySelectorAll('.js-product')],
@@ -91,6 +100,8 @@ function initPos() {
 
         cart.set(key, {
             key,
+            productId: Number(product.id),
+            toppingIds: selected.map((topping) => Number(topping.id)),
             name: product.name,
             basePrice: product.price,
             quantity,
@@ -140,7 +151,6 @@ function initPos() {
         elements.total.textContent = formatRupiah(baseTotal + toppingTotal);
         elements.cartEmpty.hidden = lines.length > 0;
         elements.checkout.disabled = lines.length === 0;
-        elements.checkoutNote.classList.add('hidden');
     };
 
     const changeQuantity = (key, delta) => {
@@ -281,8 +291,130 @@ function initPos() {
         renderCart();
     });
 
-    elements.checkout.addEventListener('click', () => {
-        elements.checkoutNote.classList.remove('hidden');
+    const selectedType = () =>
+        elements.typeRadios.find((radio) => radio.checked)?.value ?? 'TA';
+
+    const syncTypeFields = () => {
+        const type = selectedType();
+
+        elements.tableField.classList.toggle('hidden', type !== 'DI');
+        elements.addressField.classList.toggle('hidden', type !== 'DLV');
+
+        if (type !== 'DI') {
+            elements.tableNumber.value = '';
+        }
+
+        if (type !== 'DLV') {
+            elements.deliveryAddress.value = '';
+        }
+    };
+
+    const showOrderError = (message) => {
+        elements.orderSuccess.classList.add('hidden');
+        elements.orderError.textContent = message;
+        elements.orderError.classList.remove('hidden');
+    };
+
+    const showOrderSuccess = (message) => {
+        elements.orderError.classList.add('hidden');
+        elements.orderSuccess.textContent = message;
+        elements.orderSuccess.classList.remove('hidden');
+    };
+
+    const buildOrderPayload = () => {
+        const lines = [...cart.values()];
+        const type = selectedType();
+
+        return {
+            type,
+            customer_name: elements.customerName.value.trim(),
+            table_number: type === 'DI' ? elements.tableNumber.value.trim() : '',
+            delivery_address: type === 'DLV' ? elements.deliveryAddress.value.trim() : '',
+            notes: elements.orderNotes.value.trim(),
+            items: lines.map((line) => ({
+                product_id: line.productId,
+                quantity: line.quantity,
+                topping_ids: line.toppingIds,
+            })),
+        };
+    };
+
+    const firstErrorMessage = (data) => {
+        if (data?.errors) {
+            const first = Object.values(data.errors)[0];
+
+            if (Array.isArray(first) && first.length > 0) {
+                return first[0];
+            }
+        }
+
+        return data?.message ?? 'Pesanan gagal disimpan. Coba lagi.';
+    };
+
+    elements.typeRadios.forEach((radio) => radio.addEventListener('change', syncTypeFields));
+
+    elements.orderForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        if (cart.size === 0) {
+            showOrderError('Keranjang masih kosong, tambahkan minimal satu produk.');
+
+            return;
+        }
+
+        const type = selectedType();
+
+        if (type === 'DI' && elements.tableNumber.value.trim() === '') {
+            showOrderError('Nomor meja wajib diisi untuk pesanan dine-in.');
+
+            return;
+        }
+
+        if (type === 'DLV' && elements.deliveryAddress.value.trim() === '') {
+            showOrderError('Alamat pengiriman wajib diisi untuk pesanan delivery.');
+
+            return;
+        }
+
+        const token = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        elements.orderError.classList.add('hidden');
+        elements.orderSuccess.classList.add('hidden');
+        elements.checkout.disabled = true;
+        elements.checkout.textContent = 'Menyimpan...';
+
+        try {
+            const response = await fetch(elements.orderForm.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': token,
+                },
+                body: JSON.stringify(buildOrderPayload()),
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                showOrderError(firstErrorMessage(data));
+
+                return;
+            }
+
+            cart.clear();
+            elements.orderForm.reset();
+            elements.customerName.value = '';
+            elements.orderNotes.value = '';
+            syncTypeFields();
+            renderCart();
+            showOrderSuccess(data.message ?? 'Pesanan berhasil disimpan.');
+        } catch (error) {
+            showOrderError('Tidak dapat menghubungi server. Periksa koneksi lalu coba lagi.');
+        } finally {
+            elements.checkout.textContent = 'Simpan Pesanan';
+            elements.checkout.disabled = cart.size === 0;
+        }
     });
 
     const applyFilters = () => {
@@ -319,6 +451,7 @@ function initPos() {
     });
 
     elements.search.addEventListener('input', applyFilters);
+    syncTypeFields();
     renderCart();
 }
 
