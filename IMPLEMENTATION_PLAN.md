@@ -79,7 +79,11 @@ tests/Feature/              # ModelRelationsTest, DemoMenuSeederTest (Tahap 1); 
 - [x] **Tahap 1 — fondasi**: 7 migration baru, 7 model + relasi/casts, 4 enum (`OrderType`, `OrderStatus`, `PaymentMethod`, `PaymentStatus`), 5 factory, `DemoMenuSeeder` (idempoten), 16 test Pest lulus
 - [x] **Migrasi MySQL**: 10 migrasi Ran (batch 1: 3 baseline + 7 fondasi POS) — diverifikasi via `migrate:status` dan `db:show`
 - [x] **Seeding MySQL**: `db:seed --class=DemoMenuSeeder` sukses — 4 kategori, 17 produk, 7 topping (semua `is_available`)
-- [ ] Menunggu persetujuan: commit Tahap 1
+- [x] Commit Tahap 1: `78dc9e2` (feat: add WarungCerdas POS database foundation)
+- [x] **Tahap 2 — manajemen menu + UI kasir**: `routes/web.php` (redirect `/` → `pos.index`, 3 resource route tanpa `show`), layout POS + komponen Blade (`nav-link`, `money`, `flash`, `checkbox`), kelas komponen Tailwind 4 di `app.css`, `CategoryController`/`ProductController`/`ToppingController` + 6 FormRequest (validasi + pesan Indonesia), scope `Category::active()`/`Product::available()`, halaman kasir read-only (grid menu, filter kategori, pencarian, keranjang + modal topping via vanilla JS di `resources/js/app.js`), `MenuManagementTest` + `PosPageTest`, `ExampleTest` disesuaikan ke redirect `/`
+- [x] **Verifikasi Tahap 2**: 32 test lulus (112 assertions), `pint --dirty` passed, `node --check` valid, `npm run build` sukses
+- [ ] Tahap 2 belum mencakup: penyimpanan pesanan, pembayaran, laporan, AI (sesuai batas scope)
+- [ ] Menunggu approval: rencana Tahap 3 (simpan pesanan + `OrderService` transaksi)
 
 ## Aturan Prosedural
 
