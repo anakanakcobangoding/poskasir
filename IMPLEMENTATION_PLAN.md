@@ -7,7 +7,7 @@ Stack: Laravel 13.37 · PHP 8.4 · Blade + Tailwind CSS 4 (Vite 8) · MySQL (tar
 
 - Struktur sederhana: satu store (tanpa multi-tenant), Blade server-rendered, tanpa framework JS tambahan.
 - Validasi backend (FormRequest/`$request->validate()`), semua operasi tulis dalam **DB transaction**.
-- Uang disimpan sebagai **integer Rupiah** (tanpa desimal/pembulatan).
+- Uang disimpan sebagai **decimal(12,2)** di kolom uang (cast `decimal:2` di model) — keputusan Tahap 1, menggantikan rencana awal integer Rupiah.
 - Setiap fitur punya test Pest (feature test) sebelum lanjut ke fitur berikutnya.
 - Tidak ada secret di source code; API key AI hanya di `.env`.
 
@@ -16,8 +16,8 @@ Stack: Laravel 13.37 · PHP 8.4 · Blade + Tailwind CSS 4 (Vite 8) · MySQL (tar
 | Tabel | Tujuan | Kolom utama |
 |---|---|---|
 | `categories` | Kategori menu | `name`, `sort_order`, `is_active` |
-| `products` | Item menu | `category_id` FK, `name`, `price` (int), `is_available` |
-| `toppings` | Topping global | `name`, `price` (int), `is_available` |
+| `products` | Item menu | `category_id` FK, `name`, `price` (decimal 12,2), `is_available` |
+| `toppings` | Topping global | `name`, `price` (decimal 12,2), `is_available` |
 | `orders` | Pesanan | `order_number` (unik, dibuat otomatis), `type` enum `DLV,DI,TA`, `status` enum `new,preparing,ready,completed,cancelled`, `customer_name?`, `table_number?` (DI), `delivery_address?` (DLV), `subtotal`, `total`, `payment_method` enum `cash,qris,NULL`, `amount_paid`, `change`, `payment_status` enum `unpaid,paid`, `paid_at`, `notes` |
 | `order_items` | Item pesanan (snapshot harga) | `order_id` FK, `product_id` FK nullable, `product_name`, `unit_price`, `quantity`, `subtotal`, `notes` |
 | `order_item_toppings` | Topping per item (snapshot harga) | `order_item_id` FK, `topping_id` FK nullable, `topping_name`, `price`, `quantity` |
@@ -43,13 +43,14 @@ app/Http/Controllers/
   InsightController.php    # AI Business Insight
 app/Http/Requests/         # validasi backend per form
 app/Models/                # Category, Product, Topping, Order, OrderItem, OrderItemTopping, Setting
+app/Enums/                 # OrderType, OrderStatus, PaymentMethod, PaymentStatus (Tahap 1)
 app/Services/OrderService.php  # create order + pembayaran dalam DB::transaction
 resources/views/
   layouts/app.blade.php
   pos/index.blade.php            orders/{active,history,show}  dashboard  reports  menu CRUD
 routes/web.php              # semua route named + CSRF (Blade default)
 database/migrations/        # 7 migrasi baru di atas (tidak menyentuh migrasi bawaan)
-tests/Feature/              # MenuManagementTest, PosOrderTest, PaymentTest, ReportTest, ...
+tests/Feature/              # ModelRelationsTest, DemoMenuSeederTest (Tahap 1); lalu MenuManagementTest, PosOrderTest, PaymentTest, ReportTest, ...
 ```
 
 ## Jadwal 7 Hari
@@ -73,14 +74,12 @@ tests/Feature/              # MenuManagementTest, PosOrderTest, PaymentTest, Rep
 
 - [x] Git diinisialisasi, initial commit bersih (`.env`, sqlite, vendor, node_modules, logs ter-ignore)
 - [x] `APP_NAME="WarungCerdas POS"` di `.env` dan `.env.example`
-- [x] MySQL server berjalan (FlyEnv MySQL 26.7, `127.0.0.1:3306`) — **koneksi belum dikonfigurasi** (lihat blokir di bawah)
+- [x] MySQL server berjalan (FlyEnv MySQL 26.7, `127.0.0.1:3306`), database `warungcerdas_pos` terisi di `.env` dan terverifikasi
 - [x] Test suite baseline hijau (SQLite `:memory:`)
-- [ ] **Butuh tindakan Anda**: buat database + isi kredensial MySQL di `.env`:
-  ```
-  mysql -u<user> -p -e "CREATE DATABASE warungcerdas CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-  ```
-  Lalu di `.env`: `DB_CONNECTION=mysql`, `DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_DATABASE=warungcerdas`, `DB_USERNAME=...`, `DB_PASSWORD=...`
-- [ ] `php artisan migrate` di MySQL setelah kredensial terisi (tidak memakai `migrate:fresh`)
+- [x] **Tahap 1 — fondasi**: 7 migration baru, 7 model + relasi/casts, 4 enum (`OrderType`, `OrderStatus`, `PaymentMethod`, `PaymentStatus`), 5 factory, `DemoMenuSeeder` (idempoten), 16 test Pest lulus
+- [x] **Migrasi MySQL**: 10 migrasi Ran (batch 1: 3 baseline + 7 fondasi POS) — diverifikasi via `migrate:status` dan `db:show`
+- [x] **Seeding MySQL**: `db:seed --class=DemoMenuSeeder` sukses — 4 kategori, 17 produk, 7 topping (semua `is_available`)
+- [ ] Menunggu persetujuan: commit Tahap 1
 
 ## Aturan Prosedural
 
