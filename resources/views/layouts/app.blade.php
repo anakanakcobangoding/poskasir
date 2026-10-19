@@ -29,6 +29,12 @@
                 </svg>
                 <span>Kasir</span>
             </x-nav-link>
+            <x-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
+                <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 6h11M9 12h11M9 18h11" /><path d="M4 6h.01M4 12h.01M4 18h.01" />
+                </svg>
+                <span>Pesanan</span>
+            </x-nav-link>
             <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
                 <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
