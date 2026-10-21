@@ -25,7 +25,7 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($toppings as $topping)
                         <tr class="hover:bg-slate-50/70">
-                            <td class="td font-medium text-slate-900">{{ $topping->name }}</td>
+                            <td class="td font-medium text-slate-900"><div class="flex items-center gap-3"><x-menu-image :src="$topping->image ? route('toppings.image', $topping, absolute: false) : null" :name="$topping->name" class="h-12 w-12 shrink-0 rounded-lg" /><span>{{ $topping->name }}</span></div></td>
                             <td class="td text-slate-600"><x-money :value="$topping->price" /></td>
                             <td class="td">
                                 @if ($topping->is_available)

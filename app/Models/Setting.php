@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['key', 'value'])]
+#[Fillable(['key', 'value', 'group', 'description'])]
 class Setting extends Model
 {
     //

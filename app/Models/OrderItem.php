@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'product_id',
     'product_name',
     'unit_price',
+    'hpp',
     'quantity',
     'subtotal',
     'notes',
@@ -32,6 +33,7 @@ class OrderItem extends Model
     {
         return [
             'unit_price' => 'decimal:2',
+            'hpp' => 'decimal:2',
             'quantity' => 'integer',
             'subtotal' => 'decimal:2',
         ];

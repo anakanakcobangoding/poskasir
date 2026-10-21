@@ -42,8 +42,8 @@
                                         <ul class="mt-1 space-y-0.5">
                                             @foreach ($item->toppings as $topping)
                                                 <li class="text-xs text-slate-500">
-                                                    + {{ $topping->topping_name }}
-                                                    <span class="text-slate-400">(<x-money :value="$topping->price" />)</span>
+                                                    + {{ $topping->topping_name }} x{{ $topping->quantity }} per produk
+                                                    <span class="text-slate-400">(@ <x-money :value="$topping->price" />; <x-money :value="$topping->price * $topping->quantity * $item->quantity" /> total)</span>
                                                 </li>
                                             @endforeach
                                         </ul>
@@ -123,6 +123,36 @@
                             {{ $order->payment_status === \App\Enums\PaymentStatus::Paid ? 'Lunas' : 'Belum dibayar' }}
                         </dd>
                     </div>
+                    @if ($order->payment_method)
+                        <div class="flex items-start justify-between gap-3">
+                            <dt class="text-slate-500">Metode</dt>
+                            <dd class="text-right font-medium text-slate-800">
+                                {{ $order->payment_method === \App\Enums\PaymentMethod::Qris ? 'QRIS' : 'Tunai' }}
+                            </dd>
+                        </div>
+                    @endif
+                    @if ($order->payment_status === \App\Enums\PaymentStatus::Paid)
+                        @if ($order->amount_paid !== null)
+                            <div class="flex items-start justify-between gap-3">
+                                <dt class="text-slate-500">Dibayar</dt>
+                                <dd class="text-right font-medium text-slate-800"><x-money :value="$order->amount_paid" /></dd>
+                            </div>
+                        @endif
+                        @if ($order->change !== null && (float) $order->change > 0)
+                            <div class="flex items-start justify-between gap-3">
+                                <dt class="text-slate-500">Kembalian</dt>
+                                <dd class="text-right font-medium text-slate-800"><x-money :value="$order->change" /></dd>
+                            </div>
+                        @endif
+                        @if ($order->paid_at)
+                            <div class="flex items-start justify-between gap-3">
+                                <dt class="text-slate-500">Waktu bayar</dt>
+                                <dd class="text-right font-medium text-slate-800">
+                                    {{ $order->paid_at->timezone(\App\Services\OrderService::LOCAL_TIMEZONE)->format('d/m/Y H:i') }}
+                                </dd>
+                            </div>
+                        @endif
+                    @endif
                     @if ($order->notes)
                         <div class="border-t border-slate-100 pt-2">
                             <dt class="text-slate-500">Catatan</dt>

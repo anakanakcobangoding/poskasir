@@ -2,6 +2,7 @@
 
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -13,6 +14,10 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
+
+beforeEach(function () {
+    actingAsUser();
+});
 
 /**
  * Build the duplicate-key exception a concurrent order insert would raise.
@@ -30,6 +35,7 @@ function orderNumberConflict(): QueryException
 test('it stores a takeaway order with database snapshots and server-calculated totals', function () {
     $product = Product::factory()->create(['name' => 'Mi Ayam Original', 'price' => 15000]);
     $topping = Topping::factory()->create(['name' => 'Telur Rebus', 'price' => 3000]);
+    $product->toppings()->attach($topping->id);
 
     $response = $this->postJson(route('orders.store'), [
         'type' => 'TA',
@@ -52,7 +58,7 @@ test('it stores a takeaway order with database snapshots and server-calculated t
 
     expect($order->order_number)->toMatch('/^WC-\d{8}-\d{3}$/')
         ->and($order->type)->toBe(OrderType::TA)
-        ->and($order->status)->toBe(OrderStatus::New)
+        ->and($order->status)->toBe(OrderStatus::Preparing)
         ->and($order->payment_status)->toBe(PaymentStatus::Unpaid)
         ->and($order->payment_method)->toBeNull()
         ->and($order->amount_paid)->toBeNull()
@@ -103,6 +109,7 @@ test('stores a delivery order with its address', function () {
     $this->postJson(route('orders.store'), [
         'type' => 'DLV',
         'delivery_address' => 'Jl. Merdeka No. 10',
+        'delivery_platform' => 'shopeefood',
         'items' => [['product_id' => $product->id, 'quantity' => 1]],
     ])->assertCreated();
 
@@ -110,6 +117,7 @@ test('stores a delivery order with its address', function () {
 
     expect($order->type)->toBe(OrderType::DLV)
         ->and($order->delivery_address)->toBe('Jl. Merdeka No. 10')
+        ->and($order->delivery_platform)->toBe('shopeefood')
         ->and($order->table_number)->toBeNull();
 });
 
@@ -133,7 +141,7 @@ test('requires a delivery address for delivery orders', function () {
         'type' => 'DLV',
         'items' => [['product_id' => $product->id, 'quantity' => 1]],
     ])->assertStatus(422)
-        ->assertJsonValidationErrors(['delivery_address' => 'Alamat pengiriman wajib diisi untuk pesanan delivery.']);
+        ->assertJsonValidationErrors(['delivery_platform' => 'Pilih platform delivery (ShopeeFood, GoFood, atau GrabFood).']);
 
     $this->assertDatabaseCount('orders', 0);
 });
@@ -145,13 +153,15 @@ test('ignores table and delivery fields for takeaway orders', function () {
         'type' => 'TA',
         'table_number' => 'B9',
         'delivery_address' => 'Jl. Palsu No. 1',
+        'delivery_platform' => 'gofood',
         'items' => [['product_id' => $product->id, 'quantity' => 1]],
     ])->assertCreated();
 
     $order = Order::sole();
 
     expect($order->table_number)->toBeNull()
-        ->and($order->delivery_address)->toBeNull();
+        ->and($order->delivery_address)->toBeNull()
+        ->and($order->delivery_platform)->toBeNull();
 });
 
 test('rejects an empty cart', function () {
@@ -245,6 +255,7 @@ test('rejects unavailable toppings', function () {
 test('ignores prices and statuses sent by the client', function () {
     $product = Product::factory()->create(['name' => 'Bakso Urat', 'price' => 20000]);
     $topping = Topping::factory()->create(['name' => 'Pangsit', 'price' => 4000]);
+    $product->toppings()->attach($topping->id);
 
     $this->postJson(route('orders.store'), [
         'type' => 'TA',
@@ -252,7 +263,11 @@ test('ignores prices and statuses sent by the client', function () {
         'total' => 1,
         'status' => 'completed',
         'payment_status' => 'paid',
-        'amount_paid' => 1,
+        'payment_method' => 'cash',
+        'payment_confirmed' => true,
+        'amount_paid' => 100000,
+        'change' => 99999,
+        'paid_at' => '2000-01-01 00:00:00',
         'items' => [
             [
                 'product_id' => $product->id,
@@ -268,9 +283,11 @@ test('ignores prices and statuses sent by the client', function () {
     $order = Order::sole();
     $item = $order->items()->sole();
 
-    expect($order->status)->toBe(OrderStatus::New)
-        ->and($order->payment_status)->toBe(PaymentStatus::Unpaid)
-        ->and($order->amount_paid)->toBeNull()
+    expect($order->status)->toBe(OrderStatus::Preparing)
+        ->and($order->payment_status)->toBe(PaymentStatus::Paid)
+        ->and($order->payment_method)->toBe(PaymentMethod::Cash)
+        ->and($order->amount_paid)->toBe('100000.00')
+        ->and($order->change)->toBe('28000.00')
         ->and($order->subtotal)->toBe('72000.00')
         ->and($order->total)->toBe('72000.00')
         ->and($item->product_name)->toBe('Bakso Urat')
@@ -309,6 +326,7 @@ test('rolls back the whole order when an item insert fails', function () {
 test('rolls back the whole order when a topping insert fails', function () {
     $product = Product::factory()->create(['price' => 10000]);
     $topping = Topping::factory()->create(['price' => 2500]);
+    $product->toppings()->attach($topping->id);
 
     Event::listen('eloquent.creating: '.OrderItemTopping::class, function () {
         throw new QueryException('sqlite', 'insert into "order_item_toppings"', [], new PDOException('boom'));

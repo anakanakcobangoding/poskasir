@@ -3,6 +3,8 @@
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Topping;
+use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoMenuSeeder;
 
 test('seeds the demo menu for a mi ayam and bakso stall', function () {
@@ -35,4 +37,40 @@ test('keeps data that is not part of the demo menu', function () {
 
     expect(Category::where('name', 'Kopi')->exists())->toBeTrue()
         ->and(Product::where('name', 'Kopi Susu')->exists())->toBeTrue();
+});
+
+test('the database seeder does not create a default account in production', function () {
+    app()->detectEnvironment(fn () => 'production');
+
+    $this->seed(DatabaseSeeder::class);
+
+    expect(User::where('email', 'test@example.com')->exists())->toBeFalse()
+        ->and(Category::count())->toBe(0)
+        ->and(Product::count())->toBe(0)
+        ->and(Topping::count())->toBe(0);
+});
+
+test('the database seeder creates demo data in the testing environment', function () {
+    $this->seed(DatabaseSeeder::class);
+
+    expect(User::where('email', 'test@example.com')->exists())->toBeTrue()
+        ->and(Category::count())->toBe(4);
+});
+
+test('the demo menu seeder does not write data outside local and testing', function () {
+    app()->detectEnvironment(fn () => 'production');
+
+    $this->seed(DemoMenuSeeder::class);
+
+    expect(Category::count())->toBe(0)
+        ->and(Product::count())->toBe(0)
+        ->and(Topping::count())->toBe(0);
+});
+
+test('the demo menu seeder still works in the testing environment', function () {
+    $this->seed(DemoMenuSeeder::class);
+
+    expect(Category::count())->toBe(4)
+        ->and(Product::count())->toBe(17)
+        ->and(Topping::count())->toBe(7);
 });

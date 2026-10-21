@@ -9,8 +9,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['category_id', 'name', 'price', 'is_available'])]
+#[Fillable(['category_id', 'name', 'price', 'hpp', 'image', 'is_available'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -25,6 +26,7 @@ class Product extends Model
     {
         return [
             'price' => 'decimal:2',
+            'hpp' => 'decimal:2',
             'is_available' => 'boolean',
         ];
     }
@@ -33,6 +35,16 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Toppings explicitly allowed for this product.
+     *
+     * @return BelongsToMany<Topping, $this>
+     */
+    public function toppings(): BelongsToMany
+    {
+        return $this->belongsToMany(Topping::class);
     }
 
     #[Scope]

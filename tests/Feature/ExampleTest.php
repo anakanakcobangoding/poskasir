@@ -1,7 +1,9 @@
 <?php
 
-test('the root path redirects to the cashier page', function () {
+test('the root path displays welcome', function () {
+    actingAsUser();
+
     $response = $this->get('/');
 
-    $response->assertRedirect(route('pos.index'));
+    $response->assertOk()->assertSee('Mulai Kasir');
 });

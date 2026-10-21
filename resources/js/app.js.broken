@@ -1,0 +1,15 @@
+const formatRupiah = (value) => `Rp ${Math.round(Number(value)).toLocaleString('id-ID')}`;
+
+const initSidebar = () => {
+    const toggle = document.getElementById('sidebar-toggle');
+    const close = document.getElementById('sidebar-close');
+    const overlay = document.getElementById('sidebar-overlay');
+    const sidebar = document.getElementById('sidebar');
+    if (!toggle || !sidebar) return;
+    const open = () => { sidebar.classList.remove('-translate-x-full'); overlay?.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); };
+    const closeSidebar = () => { sidebar.classList.add('-translate-x-full'); overlay?.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); };
+    toggle.addEventListener('click', open);
+    close?.addEventListener('click', closeSidebar);
+    overlay?.addEventListener('click', closeSidebar);
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+};

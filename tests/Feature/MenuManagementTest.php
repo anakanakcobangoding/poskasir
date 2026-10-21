@@ -1,8 +1,13 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Topping;
+
+beforeEach(function () {
+    actingAsUser(['role' => UserRole::Admin]);
+});
 
 test('category page lists categories with their product count', function () {
     $category = Category::factory()->create(['name' => 'Mi Ayam']);
@@ -108,7 +113,7 @@ test('a product requires a valid category and a numeric price', function () {
     ])->assertSessionHasErrors([
         'category_id' => 'Kategori yang dipilih tidak ditemukan.',
         'name' => 'Nama produk wajib diisi.',
-        'price' => 'Harga harus berupa angka.',
+        'price' => 'Harga jual harus berupa angka.',
     ]);
 
     $this->assertDatabaseCount('products', 0);
@@ -174,7 +179,7 @@ test('a topping requires a unique name and a numeric price', function () {
         'is_available' => '1',
     ])->assertSessionHasErrors([
         'name' => 'Nama topping sudah digunakan, pilih nama lain.',
-        'price' => 'Harga harus berupa angka.',
+        'price' => 'Harga jual harus berupa angka.',
     ]);
 
     $this->assertDatabaseCount('toppings', 1);

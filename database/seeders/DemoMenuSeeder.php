@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\Topping;
 use Illuminate\Database\Seeder;
 
@@ -74,9 +75,16 @@ class DemoMenuSeeder extends Seeder
 
     /**
      * Run the database seeds.
+     *
+     * Demo menu data is only seeded on local and testing environments.
+     * Invoking this seeder directly on any other environment is a no-op.
      */
     public function run(): void
     {
+        if (! $this->allowsDemoData()) {
+            return;
+        }
+
         foreach ($this->categories as $categoryData) {
             $category = Category::updateOrCreate(
                 ['name' => $categoryData['name']],
@@ -97,5 +105,30 @@ class DemoMenuSeeder extends Seeder
                 ['price' => $toppingData['price'], 'is_available' => true],
             );
         }
+
+        $this->attachToppingsToProducts();
+    }
+
+    /**
+     * Allow every seeded topping on the mi ayam and bakso products.
+     *
+     * Additive and idempotent: syncWithoutDetaching never removes existing links.
+     */
+    private function attachToppingsToProducts(): void
+    {
+        $toppingIds = Topping::whereIn('name', array_column($this->toppings, 'name'))->pluck('id')->all();
+
+        $products = Product::query()
+            ->whereHas('category', fn ($query) => $query->whereIn('name', ['Mi Ayam', 'Bakso']))
+            ->get();
+
+        foreach ($products as $product) {
+            $product->toppings()->syncWithoutDetaching($toppingIds);
+        }
+    }
+
+    private function allowsDemoData(): bool
+    {
+        return app()->environment(['local', 'testing']);
     }
 }

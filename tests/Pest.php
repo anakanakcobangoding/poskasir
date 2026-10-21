@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +48,16 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Create a user and sign them in for the current test request.
+ */
+function actingAsUser(array $attributes = []): User
+{
+    $user = User::factory()->create($attributes);
+
+    test()->actingAs($user);
+
+    return $user;
 }

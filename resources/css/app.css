@@ -2,6 +2,19 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../../resources/views/*.blade.php';
+@source '../../resources/views/**/*.blade.php';
+
+@source inline("card stat-card");
+
+@layer utilities {
+    .card {
+        @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+    }
+    .stat-card {
+        @apply rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-1;
+    }
+}
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
@@ -48,4 +61,41 @@
     .td {
         @apply px-5 py-3;
     }
+}
+
+.store-status-action { position: absolute; right: 0; top: 100%; z-index: 30; visibility: hidden; opacity: 0; transition: opacity 250ms, visibility 250ms; white-space: nowrap; }
+.store-control:hover .store-status-action,
+.store-control:focus-within .store-status-action,
+.store-control.is-revealed .store-status-action { visibility: visible; opacity: 1; }
+[data-store-start][aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) { .store-status-action { transition: none; } }
+
+.store-status-badge[data-open="true"] { color: #047857; background: #ecfdf5; border-color: #a7f3d0; }
+.store-status-badge[data-open="false"] { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
+
+#app-sidebar { flex-shrink: 0; }
+[data-sidebar-avatar] { display: none; }
+@media (min-width: 1024px) {
+    #app-sidebar { width: 4.5rem; transition: width 250ms ease; overflow-x: hidden; }
+    #app-shell.sidebar-expanded #app-sidebar { width: 17rem; }
+    #app-sidebar > div:first-child { padding-inline: 1rem; flex-shrink: 0; }
+    #app-sidebar nav a { min-height: 2.75rem; }
+    #app-sidebar nav a > span,
+    #app-sidebar [data-sidebar-brand],
+    #app-sidebar [data-sidebar-user],
+    #app-sidebar [data-sidebar-logout-label] { display: none; }
+    #app-sidebar [data-sidebar-avatar] { display: grid; }
+    #app-sidebar [data-sidebar-footer] { padding-inline: 1rem; }
+    #app-sidebar [data-sidebar-footer] button { padding-inline: 0; }
+    #app-shell.sidebar-expanded #app-sidebar nav a > span,
+    #app-shell.sidebar-expanded #app-sidebar [data-sidebar-brand],
+    #app-shell.sidebar-expanded #app-sidebar [data-sidebar-user],
+    #app-shell.sidebar-expanded #app-sidebar [data-sidebar-logout-label] { display: block; }
+    #app-shell.sidebar-expanded #app-sidebar nav a > span { white-space: nowrap; }
+    #app-shell.sidebar-expanded #app-sidebar [data-sidebar-avatar] { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { #app-sidebar { transition: none; } }
+
+@media (max-width: 400px) {
+    .store-status-action { position: fixed; top: 4.25rem; right: 0.5rem; left: auto; }
 }

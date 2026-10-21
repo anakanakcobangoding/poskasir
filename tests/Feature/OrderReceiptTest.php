@@ -6,6 +6,10 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use Carbon\CarbonImmutable;
 
+beforeEach(function () {
+    actingAsUser();
+});
+
 test('the receipt shows stored order snapshots', function () {
     $order = Order::factory()->create([
         'status' => OrderStatus::New,

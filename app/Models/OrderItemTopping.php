@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'topping_id',
     'topping_name',
     'price',
+    'hpp',
     'quantity',
 ])]
 class OrderItemTopping extends Model
@@ -24,6 +25,7 @@ class OrderItemTopping extends Model
     {
         return [
             'price' => 'decimal:2',
+            'hpp' => 'decimal:2',
             'quantity' => 'integer',
         ];
     }

@@ -9,9 +9,16 @@ use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Models\Order;
 use App\Services\OrderService;
 use App\Services\OrderStatusService;
+use App\Services\StoreOperationService;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use RuntimeException;
 
 class OrderController extends Controller
 {
@@ -49,11 +56,54 @@ class OrderController extends Controller
 
     public function store(StoreOrderRequest $request): JsonResponse
     {
-        $order = $this->orders->create($request->validated());
+        $data = $request->validated();
+        $token = $request->header('Idempotency-Key');
 
+        if ($token === null) {
+            return $this->createdResponse($this->orders->create($data));
+        }
+
+        if (! Str::isUuid($token)) {
+            throw ValidationException::withMessages(['checkout_token' => 'Token checkout tidak valid. Buka ulang checkout.']);
+        }
+
+        $cache = Cache::store('database');
+        $key = 'checkout:'.$request->user()->getAuthIdentifier().':'.$token;
+        $fingerprint = hash('sha256', json_encode($data, JSON_THROW_ON_ERROR));
+
+        try {
+            return $cache->lock($key.':lock', 120)->block(3, function () use ($cache, $key, $fingerprint, $data): JsonResponse {
+                return DB::transaction(function () use ($cache, $key, $fingerprint, $data): JsonResponse {
+                    app(StoreOperationService::class)->assertOpenForTransaction();
+                    $previous = $cache->get($key);
+
+                    if ($previous !== null) {
+                        abort_unless(hash_equals($previous['fingerprint'], $fingerprint), 409, 'Checkout ini sudah tersimpan dengan data berbeda. Periksa daftar pesanan sebelum membuat transaksi baru.');
+
+                        return $this->createdResponse(Order::findOrFail($previous['order_id']));
+                    }
+
+                    $order = $this->orders->create($data);
+
+                    if (! $cache->put($key, ['fingerprint' => $fingerprint, 'order_id' => $order->id], now()->addDay())) {
+                        throw new RuntimeException('Checkout replay protection could not be stored.');
+                    }
+
+                    return $this->createdResponse($order);
+                });
+            });
+        } catch (LockTimeoutException) {
+            return response()->json(['message' => 'Checkout masih diproses. Tunggu sebentar lalu coba lagi.'], 409);
+        }
+    }
+
+    private function createdResponse(Order $order): JsonResponse
+    {
         return response()->json([
             'message' => 'Pesanan '.$order->order_number.' berhasil disimpan.',
             'order_number' => $order->order_number,
+            'id' => $order->id,
+            'receipt_url' => route('orders.receipt', $order, absolute: false),
         ], 201);
     }
 

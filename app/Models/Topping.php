@@ -6,9 +6,10 @@ use Database\Factories\ToppingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'price', 'is_available'])]
+#[Fillable(['name', 'price', 'hpp', 'image', 'is_available'])]
 class Topping extends Model
 {
     /** @use HasFactory<ToppingFactory> */
@@ -23,6 +24,7 @@ class Topping extends Model
     {
         return [
             'price' => 'decimal:2',
+            'hpp' => 'decimal:2',
             'is_available' => 'boolean',
         ];
     }
@@ -31,5 +33,15 @@ class Topping extends Model
     public function orderItemToppings(): HasMany
     {
         return $this->hasMany(OrderItemTopping::class);
+    }
+
+    /**
+     * Products that allow this topping.
+     *
+     * @return BelongsToMany<Product, $this>
+     */
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class);
     }
 }

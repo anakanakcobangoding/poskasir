@@ -49,6 +49,10 @@ class OrderStatusService
     public function transition(Order $order, OrderStatus $to): Order
     {
         return DB::transaction(function () use ($order, $to): Order {
+            if ($to !== OrderStatus::Cancelled) {
+                app(StoreOperationService::class)->assertOpenForTransaction();
+            }
+
             $locked = Order::query()
                 ->whereKey($order->getKey())
                 ->lockForUpdate()

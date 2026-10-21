@@ -6,6 +6,10 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 
+beforeEach(function () {
+    actingAsUser();
+});
+
 /**
  * Create an order with the given attributes and item count.
  */

@@ -26,7 +26,12 @@ class UpdateProductRequest extends FormRequest
             'category_id' => ['required', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0', 'max:999999999'],
+            'hpp' => ['nullable', 'numeric', 'min:0', 'max:999999999'],
+            'image' => ['nullable', 'image', 'max:2048', 'mimes:jpeg,png,jpg,webp', 'extensions:jpg,jpeg,png,webp'],
+            'remove_image' => ['sometimes', 'boolean'],
             'is_available' => ['sometimes', 'boolean'],
+            'topping_ids' => ['nullable', 'array'],
+            'topping_ids.*' => ['integer', 'distinct', 'exists:toppings,id'],
         ];
     }
 
@@ -42,10 +47,20 @@ class UpdateProductRequest extends FormRequest
             'category_id.exists' => 'Kategori yang dipilih tidak ditemukan.',
             'name.required' => 'Nama produk wajib diisi.',
             'name.max' => 'Nama produk maksimal 255 karakter.',
-            'price.required' => 'Harga wajib diisi.',
-            'price.numeric' => 'Harga harus berupa angka.',
-            'price.min' => 'Harga tidak boleh kurang dari 0.',
-            'price.max' => 'Harga terlalu besar.',
+            'price.required' => 'Harga jual wajib diisi.',
+            'price.numeric' => 'Harga jual harus berupa angka.',
+            'price.min' => 'Harga jual tidak boleh kurang dari 0.',
+            'price.max' => 'Harga jual terlalu besar.',
+            'hpp.numeric' => 'HPP harus berupa angka.',
+            'hpp.min' => 'HPP tidak boleh kurang dari 0.',
+            'hpp.max' => 'HPP terlalu besar.',
+            'image.image' => 'File harus berupa gambar.',
+            'image.max' => 'Ukuran gambar maksimal 2 MB.',
+            'image.mimes' => 'Format gambar harus JPG, PNG, atau WebP.',
+            'topping_ids.array' => 'Daftar topping tidak valid.',
+            'topping_ids.*.integer' => 'Topping yang dipilih tidak valid.',
+            'topping_ids.*.distinct' => 'Topping yang sama tidak boleh dipilih dua kali.',
+            'topping_ids.*.exists' => 'Ada topping yang dipilih tidak ditemukan.',
         ];
     }
 
@@ -59,8 +74,11 @@ class UpdateProductRequest extends FormRequest
         return [
             'category_id' => 'kategori',
             'name' => 'nama produk',
-            'price' => 'harga',
+            'price' => 'harga jual',
+            'hpp' => 'hpp',
+            'image' => 'gambar produk',
             'is_available' => 'status tersedia',
+            'topping_ids' => 'topping',
         ];
     }
 }
